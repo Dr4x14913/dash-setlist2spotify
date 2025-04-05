@@ -16,7 +16,7 @@ convert latest artist setlist to spotify playlist
 
 # How to use:
 
-1. Fill in your API keys in the docker-compose file.
+1. Fill in your API keys in the stack.env file.
 4. Run `docker compose up`
 3. Authenticate with Spotify when the browser window opens.
 
