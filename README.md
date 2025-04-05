@@ -1,6 +1,6 @@
 # dash-setlist2spotify
 convert latest artist setlist to spotify playlist
-```markdown
+
 # Get API Keys:
 
 - **Setlist.fm**: Create an account at [setlist.fm](https://www.setlist.fm/) and get an API key from their developer portal.
@@ -30,4 +30,3 @@ convert latest artist setlist to spotify playlist
 - The date in the playlist name comes from setlist.fm data (might not always be available).
 
 You can modify the playlist parameters (name, public/private status) by adjusting the `user_playlist_create` parameters in the `create_spotify_playlist` function.
-```
