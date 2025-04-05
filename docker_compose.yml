@@ -1,0 +1,11 @@
+services:
+  setlist2spotify:
+    build: .
+    ports:
+      - "8050:8050"
+    environment:
+      - SETLISTFM_API_KEY=${SETLISTFM_API_KEY}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI}
+      - DEBUG=${DEBUG:-False}
