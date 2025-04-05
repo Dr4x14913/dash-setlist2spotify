@@ -112,4 +112,4 @@ def create_playlist(n_clicks, artist_name):
         )
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8050, debug=os.environ.get('DEBUG', False))
+    app.run(host='0.0.0.0', port=8050, debug=os.environ.get('DEBUG', False))
