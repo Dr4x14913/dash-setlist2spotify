@@ -1,115 +1,85 @@
-# app.py
+import os
+import flask
+from flask import session, redirect
 import dash
 from dash import dcc, html, Input, Output, State
-import dash_bootstrap_components as dbc
-from setlist2spotify import *
+from spotipy.oauth2 import SpotifyOAuth
+from setlist2spotify import get_latest_setlist, create_spotify_playlist
 
-# Initialize the app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
+# Configuration
+SPOTIFY_REDIRECT_URI = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://localhost:8050/callback')
+SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
+SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
+
+# Initialize Flask server
+server = flask.Flask(__name__)
+server.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default-secret-key')
+
+# Initialize Dash app
+app = dash.Dash(__name__, server=server, url_base_pathname='/')
 
 # App layout
-app.layout = dbc.Container([
-    dbc.Row(
-        dbc.Col(
-            html.H1("Setlist to Spotify Playlist Creator", className="text-center my-4"),
-            width=12
-        )
-    ),
-    dbc.Row(
-        dbc.Col([
-            dbc.InputGroup([
-                dbc.Input(
-                    id='artist-input',
-                    placeholder="Enter artist name...",
-                    type="text",
-                    className="mb-3"
-                ),
-                dbc.Button(
-                    "Create Playlist",
-                    id='submit-button',
-                    color="success",
-                    className="mb-3"
-                ),
-            ], className="mb-4"),
-            
-            dbc.Alert(
-                id='output-message',
-                color="info",
-                dismissable=True,
-                className="mb-3",
-                is_open=False
-            ),
-            
-            dbc.Card(
-                dbc.CardBody(
-                    id='playlist-link',
-                    className="text-center"
-                ),
-                className="mb-3"
-            ),
-            
-            dcc.Store(id='song-store')
-        ], width=12, md=8, className="mx-auto")
-    )
-], fluid=True)
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=True),
+    html.H1("Create Spotify Playlist from Concert Setlist"),
+    dcc.Input(id='artist-input', type='text', placeholder='Enter artist name'),
+    html.Button('Create Playlist', id='submit-button', n_clicks=0),
+    html.Div(id='output-message')
+])
 
+# Spotify OAuth routes
+@server.route('/auth')
+def auth():
+    sp_oauth = SpotifyOAuth(
+        client_id=SPOTIFY_CLIENT_ID,
+        client_secret=SPOTIFY_CLIENT_SECRET,
+        redirect_uri=SPOTIFY_REDIRECT_URI,
+        scope='playlist-modify-private'
+    )
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
+
+@server.route('/')
+def index():
+    return app.index()
+
+@server.route('/callback')
+def callback():
+    sp_oauth = SpotifyOAuth(
+        client_id=SPOTIFY_CLIENT_ID,
+        client_secret=SPOTIFY_CLIENT_SECRET,
+        redirect_uri=SPOTIFY_REDIRECT_URI,
+        scope='playlist-modify-private'
+    )
+    session.clear()
+    code = flask.request.args.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    session['access_token'] = token_info['access_token']
+    return redirect('/')
+
+# Dash callback
 @app.callback(
-    [Output('output-message', 'children'),
-     Output('output-message', 'color'),
-     Output('output-message', 'is_open'),
-     Output('song-store', 'data'),
-     Output('playlist-link', 'children')],
-    [Input('submit-button', 'n_clicks')],
-    [State('artist-input', 'value')]
+    Output('output-message', 'children'),
+    Input('submit-button', 'n_clicks'),
+    State('artist-input', 'value'),
+    prevent_initial_call=True
 )
 def create_playlist(n_clicks, artist_name):
-    if n_clicks is None or not artist_name:
-        return dash.no_update
+    if not artist_name:
+        return "Please enter an artist name."
     
-    try:
-        songs, date = get_latest_setlist(artist_name)
-        if not songs:
-            return (
-                "No recent setlist found for this artist.",
-                "warning",
-                True,
-                None,
-                None
-            )
-            
-        playlist_url = create_spotify_playlist(artist_name, songs, date)
-        if not playlist_url:
-            return (
-                "Failed to create Spotify playlist.",
-                "danger",
-                True,
-                None,
-                None
-            )
-            
-        return [
-            f"Successfully created playlist with {len(songs)} songs from {date}!",
-            "success",
-            True,
-            {'songs': songs, 'date': date},
-            dbc.Button(
-                "Open Playlist on Spotify",
-                href=playlist_url,
-                target="_blank",
-                color="success",
-                className="mt-2"
-            )
-        ]
-        
-    except Exception as e:
-        return (
-            f"Error: {str(e)}",
-            "danger",
-            True,
-            None,
-            None
-        )
+    access_token = session.get('access_token')
+    if not access_token:
+        return "Authentication required. Please go to auth page"
+    
+    songs, date = get_latest_setlist(artist_name)
+    if not songs:
+        return "No recent setlist found for this artist."
+    
+    playlist_url = create_spotify_playlist(artist_name, songs, date, access_token)
+    if playlist_url:
+        return html.A('Playlist created! Open in Spotify', href=playlist_url, target='_blank')
+    return "Failed to create playlist"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8050, debug=os.environ.get('DEBUG', False))
+    app.run(port=8050, debug=True)
