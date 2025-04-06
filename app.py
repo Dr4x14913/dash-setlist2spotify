@@ -58,6 +58,7 @@ app.layout = dbc.Container(
 # Spotify OAuth routes
 @server.route('/auth')
 def auth():
+    session.clear()
     sp_oauth = SpotifyOAuth(
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET,
