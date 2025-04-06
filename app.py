@@ -103,7 +103,7 @@ def create_playlist(n_clicks, artist_name):
         return dbc.Alert(
             [
                 "Authentication required. ",
-                dbc.Button("Go to Auth Page", href="/auth", color="primary", className="ml-2")
+                html.A(dbc.Button("Go to Auth Page", color="primary"), href="/auth", className="ml-2")
             ],
             color="danger"
         )
