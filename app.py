@@ -34,7 +34,8 @@ def auth():
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET,
         redirect_uri=SPOTIFY_REDIRECT_URI,
-        scope='playlist-modify-private'
+        scope='playlist-modify-private user-read-private',
+cache_handler=None
     )
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
@@ -49,7 +50,8 @@ def callback():
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET,
         redirect_uri=SPOTIFY_REDIRECT_URI,
-        scope='playlist-modify-private'
+        scope='playlist-modify-private user-read-private',
+cache_handler=None
     )
     session.clear()
     code = flask.request.args.get('code')
