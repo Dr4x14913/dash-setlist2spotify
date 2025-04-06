@@ -5,12 +5,26 @@ import dash
 from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.cache_handler import CacheHandler
+from spotipy import Spotify
 from setlist2spotify import get_latest_setlist, create_spotify_playlist
+
+
+class FlaskSessionCacheHandler(CacheHandler):
+    def __init__(self, session_key='token_info'):
+        self.session_key = session_key
+
+    def get_cached_token(self):
+        return session.get(self.session_key)
+
+    def save_token_to_cache(self, token_info):
+        session[self.session_key] = token_info
 
 # Configuration
 SPOTIFY_REDIRECT_URI = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://localhost:8050/callback')
 SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
+
 
 # Initialize Flask server
 server = flask.Flask(__name__)
@@ -46,6 +60,13 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             dbc.Col(
+                dbc.Button("Show session", id="showsession"),
+                width="auto"
+            ),
+            justify="center"
+        ),
+        dbc.Row(
+            dbc.Col(
                 html.Div(id='output-message'),
                 width=12
             )
@@ -64,7 +85,7 @@ def auth():
         client_secret=SPOTIFY_CLIENT_SECRET,
         redirect_uri=SPOTIFY_REDIRECT_URI,
         scope='playlist-modify-private user-read-private',
-        cache_handler=None
+        cache_handler=FlaskSessionCacheHandler(),
     )
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
@@ -80,15 +101,27 @@ def callback():
         client_secret=SPOTIFY_CLIENT_SECRET,
         redirect_uri=SPOTIFY_REDIRECT_URI,
         scope='playlist-modify-private user-read-private',
-        cache_handler=None
+        cache_handler=FlaskSessionCacheHandler(),
     )
-    session.clear()
     code = flask.request.args.get('code')
     token_info = sp_oauth.get_access_token(code)
     session['access_token'] = token_info['access_token']
     return redirect('/')
 
 # Dash callback
+@app.callback(
+        Output('output-message', 'children', allow_duplicate=True),
+        Input("showsession", "n_clicks"),
+        prevent_initial_call=True,
+)
+def showsession(_):
+    if _ is None:
+        return dash.no_update
+    sp = Spotify(auth=session['access_token'])
+    me = sp.me()
+    print(me, flush=True)  # Debug info
+    return dbc.Alert(f"{me['display_name']}", color="info")
+
 @app.callback(
     Output('output-message', 'children'),
     Input('submit-button', 'n_clicks'),
@@ -119,4 +152,4 @@ def create_playlist(n_clicks, artist_name):
     return dbc.Alert("Failed to create playlist", color="danger")
 
 if __name__ == '__main__':
-    app.run(port=8050, debug=True)
+    app.run(port=8050, debug=True, threaded=True)

@@ -8,7 +8,6 @@ SETLISTFM_API_KEY = os.environ.get('SETLISTFM_API_KEY')
 SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
 
-
 def get_latest_setlist(artist_name):
     headers = {
         "x-api-key": SETLISTFM_API_KEY,
