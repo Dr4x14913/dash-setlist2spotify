@@ -33,10 +33,20 @@ server.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default-secret-key')
 # Initialize Dash app with Bootstrap
 app = dash.Dash(__name__, server=server, url_base_pathname='/', external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# App layout with dbc components
+# Dash app layout
 app.layout = dbc.Container(
     [
         dcc.Location(id='url', refresh=True),
+        dbc.Row([
+            dbc.Col(
+                html.Div([
+                    dbc.Button("Clear Session", id="clear-session-btn", color="dark", class_name="mx-1"),
+                    html.Div(id="user-info", style={'display': 'flex', 'align-items': 'center'}),
+                ], style={'display': 'flex', 'align-items': 'center'}),
+                width=12,
+                className="text-left mt-3"
+            )
+        ]),
         dbc.Row(
             dbc.Col(
                 html.H1("Create Spotify Playlist from Concert Setlist", style={'color': '#1DB954'}),
@@ -54,13 +64,6 @@ app.layout = dbc.Container(
         dbc.Row(
             dbc.Col(
                 dbc.Button('Create Playlist', id='submit-button', n_clicks=0, color="success", className="mb-3"),
-                width="auto"
-            ),
-            justify="center"
-        ),
-        dbc.Row(
-            dbc.Col(
-                dbc.Button("Show session", id="showsession"),
                 width="auto"
             ),
             justify="center"
@@ -108,20 +111,32 @@ def callback():
     session['access_token'] = token_info['access_token']
     return redirect('/')
 
-# Dash callback
+
+# Dash callback to show the connected user
 @app.callback(
-        Output('output-message', 'children', allow_duplicate=True),
-        Input("showsession", "n_clicks"),
-        prevent_initial_call=True,
+    Output('user-info', 'children'),
+    Input('url', 'pathname'),
+    prevent_initial_call=True
 )
-def showsession(_):
-    if _ is None:
-        return dash.no_update
+def update_user_info(pathname):
+    if not session.get('access_token'):
+        return html.A(dbc.Button("Go to Auth Page", color="success", outline=True), href="/auth")
+    
     sp = Spotify(auth=session['access_token'])
     me = sp.me()
-    print(me, flush=True)  # Debug info
-    return dbc.Alert(f"{me['display_name']}", color="info")
+    return html.Span(f"Connected as {me['display_name']}", style={"color":"#1DB954"})
 
+@app.callback(
+    Output('url', 'pathname'),
+    Input('clear-session-btn', 'n_clicks'),
+    prevent_initial_call=True
+)
+def clear_session(_):
+    if _ is not None:
+        session.clear()
+    return '/'
+
+# Dash callback to create playlist
 @app.callback(
     Output('output-message', 'children'),
     Input('submit-button', 'n_clicks'),
