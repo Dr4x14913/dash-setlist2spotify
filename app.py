@@ -8,7 +8,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from spotipy.cache_handler import CacheHandler
 from spotipy import Spotify
 from setlist2spotify import get_latest_setlist, create_spotify_playlist
-
+import pandas as pd
 
 class FlaskSessionCacheHandler(CacheHandler):
     def __init__(self, session_key='token_info'):
@@ -24,7 +24,6 @@ class FlaskSessionCacheHandler(CacheHandler):
 SPOTIFY_REDIRECT_URI = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://localhost:8050/callback')
 SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
-
 
 # Initialize Flask server
 server = flask.Flask(__name__)
@@ -62,9 +61,9 @@ app.layout = dbc.Container(
             justify="center"
         ),
         dbc.Row(
-            dbc.Col(
-                dbc.Button('Create Playlist', id='submit-button', n_clicks=0, color="success", className="mb-3"),
-                width="auto"
+            dbc.Col([
+                dbc.Button('Validate setlist', id='submit-button', disabled=True, className="m-3"),
+            ], width="auto"
             ),
             justify="center"
         ),
@@ -73,7 +72,13 @@ app.layout = dbc.Container(
                 html.Div(id='output-message'),
                 width=12
             )
-        )
+        ),
+        dbc.Row(
+            dbc.Col(
+                html.Div(id='setlist-table-container'),
+                width=12
+            )
+        ),
     ],
     fluid=True,
     style={'backgroundColor': '#191414', 'color': '#FFFFFF', 'padding': '20px'}
@@ -138,7 +143,39 @@ def clear_session(_):
 
 # Dash callback to create playlist
 @app.callback(
-    Output('output-message', 'children'),
+    [
+        Output('output-message', 'children', allow_duplicate=True),
+        Output('setlist-table-container', 'children'),
+        Output('submit-button', 'disabled')
+    ], 
+    Input('artist-input', 'value'),
+    prevent_initial_call=True
+)
+def gen_table(artist_name):
+    if not artist_name:
+        return dbc.Alert("Please enter an artist name.", color="warning"), None, True
+
+    access_token = session.get('access_token')
+    if not access_token:
+        return dbc.Alert(
+            [
+                "Authentication required. ",
+                html.A(dbc.Button("Go to Auth Page", color="primary"), href="/auth", className="ml-2")
+            ],
+            color="danger"
+        ), None, True
+
+    songs, date = get_latest_setlist(artist_name)
+    if not songs:
+        return dbc.Alert("No recent setlist found for this artist.", color="warning"), None, True
+
+    table_data = [{'Song': song,} for song in songs]
+    table = [html.Label(date), dbc.Table.from_dataframe(pd.DataFrame(table_data), striped=True, bordered=True, hover=True, style={"fontSize": "0.8rem"})]
+
+    return "", table, False
+
+@app.callback(
+    Output('output-message', 'children', allow_duplicate=True),
     Input('submit-button', 'n_clicks'),
     State('artist-input', 'value'),
     prevent_initial_call=True
