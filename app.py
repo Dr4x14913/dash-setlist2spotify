@@ -74,7 +74,7 @@ app.layout = dbc.Container(
             dbc.Col(
                 html.H1(
                     "Create Playlist from Concert Setlist",
-                    style={'color': '#1DB954' if service == 'spotify' else '#00C7F2'},
+                    style={'color': '#1DB954'},
                     id='title'
                 ),
                 width=12,
@@ -258,7 +258,7 @@ def gen_table(artist_name, service):
     if service == 'spotify' and not session.get('access_token'):
         return (
             dbc.Alert(
-                ["Authentication required. ", html.A(dbc.Button("Login to Spotify", href="/spot_auth", className="ml-2")],
+                ["Authentication required. ", html.A(dbc.Button("Login to Spotify", href="/spot_auth", className="ml-2"))],
                 color="danger"
             ),
             None,
@@ -267,7 +267,7 @@ def gen_table(artist_name, service):
     elif service == 'deezer' and not session.get('deezer_access_token'):
         return (
             dbc.Alert(
-                ["Authentication required. ", html.A(dbc.Button("Login to Deezer", href="/deezer_auth", className="ml-2")],
+                ["Authentication required. ", html.A(dbc.Button("Login to Deezer", href="/deezer_auth", className="ml-2"))],
                 color="danger"
             ),
             None,
@@ -287,14 +287,15 @@ def gen_table(artist_name, service):
     Output('output-message', 'children', allow_duplicate=True),
     Input('submit-button', 'n_clicks'),
     State('artist-input', 'value'),
+    State('service-selector', 'value'),
     prevent_initial_call=True
 )
-def create_playlist(n_clicks, artist_name):
+def create_playlist(n_clicks, artist_name, service):
     if not artist_name:
         return dbc.Alert("Please enter an artist name.", color="warning")
 
     songs, date = get_latest_setlist(artist_name)
-    if not songs
+    if not songs:
         return dbc.Alert("No recent setlist found for this artist.", color="warning")
 
     if service == 'spotify':
