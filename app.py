@@ -44,7 +44,15 @@ app = dash.Dash(__name__, server=server, url_base_pathname='/', external_stylesh
 app.layout = dbc.Container(
     [
         dcc.Location(id='url', refresh=True),
-        dbc.Row(
+        dbc.Row([
+            dbc.Col(
+                html.Div([
+                    dbc.Button("Clear Session", id="clear-session-btn", color="dark", class_name="mx-1"),
+                    html.Div(id="user-info", style={'display': 'flex', 'align-items': 'center'}),
+                ], style={'display': 'flex', 'align-items': 'center'}),
+                className="text-left",
+                width=3
+            ),
             dbc.Col(
                 dcc.RadioItems(
                     id='service-selector',
@@ -56,20 +64,10 @@ app.layout = dbc.Container(
                     inline=True,
                     labelStyle={'margin-right': '20px'}
                 ),
-                width=12,
-                className="text-center mb-3"
-            )
-        ),
-        dbc.Row([
-            dbc.Col(
-                html.Div([
-                    dbc.Button("Clear Session", id="clear-session-btn", color="dark", class_name="mx-1"),
-                    html.Div(id="user-info", style={'display': 'flex', 'align-items': 'center'}),
-                ], style={'display': 'flex', 'align-items': 'center'}),
-                width=12,
-                className="text-left mt-3"
-            )
-        ]),
+                className="text-left",
+                width=3
+            ),
+        ], className="text-left my-3"),
         dbc.Row(
             dbc.Col(
                 html.H1(
