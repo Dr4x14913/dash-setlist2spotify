@@ -31,7 +31,15 @@ def get_latest_setlist(artist_name):
                     if song.get("name"):
                         songs.append(song["name"])
             if songs:
-                return songs, setlist.get("eventDate", "")
+                real_name = None
+                style = None
+                place = None
+                if setlist.get("artist"):
+                    real_name = setlist['artist'].get("name")
+                    style = setlist['artist'].get("disambiguation")
+                if setlist.get("venue"):
+                    place = setlist['venue'].get("name")
+                return songs, setlist.get("eventDate", ""), real_name, style, place
     return None, None
 
 def create_youtube_playlist(artist_name, songs, date, credentials):

@@ -79,7 +79,7 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             dbc.Col(
-                html.Div(id='setlist-table-container'),
+                dcc.Loading(id='setlist-table-container'),
                 width=12
             )
         ),
@@ -233,13 +233,17 @@ def gen_table(artist_name):
             ],
             color="danger"
         ), None, True
-
-    songs, date = get_latest_setlist(artist_name)
+    try:
+        songs, date, real_name, style, place = get_latest_setlist(artist_name)
+    except Exception as e:
+        error_msg = f"Error: {e}"
+        print(error_msg, flush=True)
+        return dbc.Alert(error_msg, color="danger")
     if not songs:
         return dbc.Alert("No recent setlist found for this artist.", color="warning"), None, True
 
     table_data = [{'Song': song,} for song in songs]
-    table = [html.Label(date), dbc.Table.from_dataframe(pd.DataFrame(table_data), striped=True, bordered=True, hover=True, style={"fontSize": "0.8rem"})]
+    table = [html.Label(f"{date}, {real_name} at {place} ({style})"), dbc.Table.from_dataframe(pd.DataFrame(table_data), striped=True, bordered=True, hover=True, style={"fontSize": "0.8rem"})]
 
     return "", table, False
 
@@ -273,7 +277,7 @@ def create_playlist(n_clicks, artist_name):
     )
 
     try:
-        songs, date = get_latest_setlist(artist_name)
+        songs, date, real_name, style, place = get_latest_setlist(artist_name)
         if not songs:
             return dbc.Alert("No recent setlist found for this artist.", color="warning")
     except Exception as e:
