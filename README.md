@@ -1,13 +1,20 @@
-# Setlist2Spotify - Convert Concert Setlists to Spotify Playlists
-Convert latest artist setlist to spotify playlist
+# Setlist2YouTubeMusic - Convert Concert Setlists to YouTube Music Playlists
+Convert the latest artist setlist into a YouTube Music playlist
 
-# Get API Keys:
+# Get API Keys and Credentials:
 
 - **Setlist.fm**: Create an account at [setlist.fm](https://www.setlist.fm/) and get an API key from their developer portal.
-- **Spotify**: Create a Spotify Developer account and register an app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+- **Google Cloud Platform**: 
+  1. Create a project at [Google Cloud Console](https://console.cloud.google.com/)
+  2. Enable "YouTube Data API v3"
+  3. Create OAuth 2.0 credentials:
+     - Application type: "Web application"
+     - Add authorized redirect URIs:
+       - `https://yourdomain.com/callback` (your production URL)
+       - `http://localhost:8050/callback` (for development)
 
 ## Set up redirect URI:
-- In your Spotify Developer App settings, add `<your-url>/callback` as a redirect URI. You can also add http://localhost:8050/callback for developpment purposes.
+- In your Google Cloud credentials, add both your production URL (`https://yourdomain.com/callback`) and local development URL (`http://localhost:8050/callback`) as authorized redirect URIs.
 
 # Installation
 
@@ -26,9 +33,9 @@ Convert latest artist setlist to spotify playlist
    Create a file named `stack.env` in the project root directory and add your environment variables:
    ```
    SETLISTFM_API_KEY=your_setlistfm_api_key
-   SPOTIFY_CLIENT_ID=your_spotify_client_id
-   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-   SPOTIFY_REDIRECT_URI=http://localhost:8050/callback # Or your url
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   GOOGLE_REDIRECT_URI=http://localhost:8050/callback  # Or your production URL
    FLASK_SECRET_KEY=your_flask_secret_key
    ```
 
@@ -42,16 +49,33 @@ Convert latest artist setlist to spotify playlist
 1. **Access the Application**
    Open your web browser and navigate to `http://localhost:8050`.
 
-2. **Login with Spotify**
-   Click on the "Go to Auth Page" button and log in with your Spotify account.
+2. **Connect YouTube Account**
+   Click on the "Connect YouTube Account" button and log in with your Google account.
 
 3. **Create a Playlist**
-   Enter an artist name in the input field, click "Create Playlist," and Setlist2Spotify will create a new playlist with the latest setlist songs.
+   Enter an artist name in the input field, click "Validate Setlist" to preview songs, then click "Create Playlist" to generate a new YouTube Music playlist with the latest setlist.
 
-# Note:
-- The app creates private playlists by default.
+# Features
+- Creates private YouTube Music playlists
+- Preview setlists before creating playlists
+- Clear session to switch YouTube accounts
+- Responsive design with dark theme
+
+# Notes:
+- The app creates private playlists by default
+- Playlist creation might take 1-2 minutes depending on setlist size
 - Some songs might not be found if:
-  - They're not available on Spotify.
-  - The naming doesn't match exactly.
-  - The artist name differs between sources.
-- The date in the playlist name comes from setlist.fm data (might not always be available).
+  - They're not available on YouTube Music
+  - The naming doesn't match exactly
+  - The artist name differs between sources
+- The date in the playlist name comes from setlist.fm data
+- Requires a Google account with YouTube access
+
+# Troubleshooting
+If you encounter HTTPS errors in production:
+1. Ensure your reverse proxy is properly configured with:
+   ```nginx
+   proxy_set_header X-Forwarded-Proto $scheme;
+   ```
+2. Verify your environment variables match your deployment environment
+3. Check that your redirect URIs in Google Cloud Console exactly match your application URLs
